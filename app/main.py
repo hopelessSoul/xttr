@@ -16,7 +16,7 @@ client.start()
 
 async def main():
     while True:
-        choice = Prompt.ask('Do you want to get groups or channels', choices=['groups', 'channels'],
+        choice = Prompt.ask('Do you want to get groups or channels', choices=['groups', 'channels', 'exit'],
                             show_choices=True).lower()
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("ID", justify="center", width=10)
@@ -32,26 +32,46 @@ async def main():
                               str(dialogs[id]['members_count']),
                               str(dialogs[id]['unread_count']))
             console.print(table)
+            while True:
+                try:
+                    dialog_id = Prompt.ask('Enter dialog id to see its history (type exit to exit)',
+                                       choices=[str(i) for i in range(1, len(dialogs) - 1)].append('exit'), show_choices=True)
+                    if dialog_id == 'exit':
+                        console.print('Farewell')
+                        exit(1)
+                    int(dialog_id)
+                    break
+                except Exception:
+                    console.print('try again')
+            history = await get_last_messages_from_dialog(client, dialogs[int(dialog_id)]['unread_count'],
+                                                          dialogs[int(dialog_id)]['chat_id'])
 
-            dialog_id = int(Prompt.ask('Enter dialog id to see its history',
-                                       show_choices=True))
-            history = await get_last_messages_from_dialog(client, dialogs[dialog_id]['unread_count'],
-                                                        dialogs[dialog_id]['chat_id'])
             await render_chat_history(history)
-        else:
+        elif choice == 'channels':
             channels = await get_user_channels(client)
             for id in range(1, len(channels)):
                 table.add_row(str(id), str(clean(channels[id]['title'], no_emoji=True, to_ascii=False)),
                               str(channels[id]['members_count']),
                               str(channels[id]['unread_count']))
             console.print(table)
-            channel_id = int(Prompt.ask('Enter channel id to see its history',
-                                        show_choices=True))
+            while True:
+                try:
+                    channel_id = Prompt.ask('Enter channel id to see its history (type exit to exit)')
+                    if channel_id == 'exit':
+                        console.print('Farewell')
+                        exit(1)
+                    int(channel_id)
+                    break
+                except Exception:
+                    console.print('try again')
 
-            history = await get_last_messages_from_channel(client, channels[channel_id]['unread_count'],
-                                                        channels[channel_id]['chat_id'])
+            history = await get_last_messages_from_channel(client, channels[int(channel_id)]['unread_count'],
+                                                           channels[int(channel_id)]['chat_id'])
 
             await render_channel_history(history)
+        else:
+            console.print('Farewell')
+            exit(1)
         console.print('\n\n\n')
         summary = Prompt.ask('Want to get dialog summary?', choices=['y', 'n'], show_choices=True)
         if summary == 'y':
