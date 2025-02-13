@@ -4,8 +4,13 @@ import os
 
 load_dotenv()
 
-client = Client(name=os.getenv('TELEGRAM_ID'), api_id=os.getenv('TELEGRAM_CLIENT_ID'),
-                api_hash=os.getenv('TELEGRAM_CLIENT_HASH'), phone_number=os.getenv('TELEGRAM_NUMBER'))
+client = Client(
+    name=os.getenv('TELEGRAM_ID'),
+    api_id=os.getenv('TELEGRAM_CLIENT_ID'),
+    api_hash=os.getenv('TELEGRAM_CLIENT_HASH'),
+    phone_number=os.getenv('TELEGRAM_NUMBER'),
+    workdir="/app/sessions"
+)
 
 
 def is_group(chat):
