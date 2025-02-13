@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  telegram-client:
+    build: .
+    volumes:
+      - ./sessions:/app/sessions
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
