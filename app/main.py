@@ -1,20 +1,29 @@
 import asyncio
-
+import logging.config
+import os
+from dotenv import load_dotenv
 from cleantext import clean
+from pyrogram import Client
 from rich.console import Console
 from rich.layout import Layout
 from rich.prompt import Prompt
 from rich.table import Table
 
-from telegram_client.utils import get_user_dialogs, client, get_last_messages_from_dialog, \
+from telegram_client.utils import get_user_dialogs, get_last_messages_from_dialog, \
     get_last_messages_from_channel, get_user_channels
+
+logging.getLogger('pyrogram.session.session')
+logging.basicConfig(level=logging.INFO)
 
 console = Console()
 layout = Layout(name='main')
-client.start()
 
 
 async def main():
+    client = Client(name=os.getenv('TELEGRAM_ID'), api_id=os.getenv('TELEGRAM_CLIENT_ID'),
+                    api_hash=os.getenv('TELEGRAM_CLIENT_HASH'), phone_number=os.getenv('TELEGRAM_NUMBER'))
+    await client.start()
+
     while True:
         choice = Prompt.ask('Do you want to get groups or channels', choices=['groups', 'channels', 'exit'],
                             show_choices=True).lower()
@@ -26,16 +35,20 @@ async def main():
         table.width = 150
 
         if choice == 'groups':
+            logging.info('got groups choice')
             dialogs = await get_user_dialogs(client)
+            logging.info(f'got {len(dialogs)} dialogs')
             for id in range(1, len(dialogs)):
-                table.add_row(str(id), str(clean(dialogs[id]['title'], no_emoji=True, to_ascii=False)),
+                table.add_row(str(id), str(clean(dialogs[id]['title'], )),
                               str(dialogs[id]['members_count']),
                               str(dialogs[id]['unread_count']))
             console.print(table)
+
             while True:
                 try:
                     dialog_id = Prompt.ask('Enter dialog id to see its history (type exit to exit)',
-                                       choices=[str(i) for i in range(1, len(dialogs) - 1)].append('exit'), show_choices=True)
+                                           choices=[str(i) for i in range(1, len(dialogs) - 1)].append('exit'),
+                                           show_choices=True)
                     if dialog_id == 'exit':
                         console.print('Farewell')
                         exit(1)
@@ -48,9 +61,11 @@ async def main():
 
             await render_chat_history(history)
         elif choice == 'channels':
+            logging.info('got channels choice')
             channels = await get_user_channels(client)
+            logging.info(f'got {len(channels)} channels')
             for id in range(1, len(channels)):
-                table.add_row(str(id), str(clean(channels[id]['title'], no_emoji=True, to_ascii=False)),
+                table.add_row(str(id), str(clean(channels[id]['title'])),
                               str(channels[id]['members_count']),
                               str(channels[id]['unread_count']))
             console.print(table)
@@ -80,13 +95,23 @@ async def main():
 
 
 async def render_chat_history(history):
-    for message in history:
-        console.print(f'{history[message]['from']}: {history[message]['text']} ({history[message]['sent_at']})')
+    try:
+        logging.info('printing chat history')
+        for message in history.__reversed__():
+            console.print(f'{history[message]["from"]}: {history[message]["message"]} ({history[message]["sent_at"]})')
+    except Exception as ex:
+        logging.info(ex)
+        console.print(ex)
 
 
 async def render_channel_history(history):
-    for message in history:
-        console.print(f'{history[message]['from']}: {history[message]['message']} ({history[message]['sent_at']})')
+    try:
+        logging.info('printing channel history')
+        for message in history.__reversed__():
+            console.print(f'{history[message]["from"]}: {history[message]["message"]} ({history[message]["sent_at"]})')
+    except Exception as ex:
+        logging.info(ex)
+        console.print(ex)
 
 
 event_loop = asyncio.get_event_loop()
